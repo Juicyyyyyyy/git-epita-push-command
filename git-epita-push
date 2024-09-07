@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Check if -help is passed
+if [ "$1" == "-help" ] || [ "$1" == "--help" ]; then
+    echo "Usage: git epita-push <tag-name> <message> [file-to-add]"
+    echo
+    echo "This command automates the process of adding files, committing, tagging, and pushing in Git."
+    echo
+    echo "Arguments:"
+    echo "  <tag-name>       The base name of the tag."
+    echo "  <message>        The commit and tag message."
+    echo "  [file-to-add]    (Optional) The file to add. Defaults to '.' (all changes)."
+    echo
+    echo "Commands executed by git epita-push:"
+    echo "  1. git add [file-to-add]    - Stages the specified file for commit. If no file is specified, it stages all changes ('.')."
+    echo "  2. git commit -m \"message\" - Commits the staged changes with the provided commit message."
+    echo "  3. git tag -a <tag-name>-<message> - Creates an annotated tag with the specified name and message."
+    echo "  4. git push --follow-tags   - Pushes both the commit and the tag to the remote repository."
+    echo
+    echo "Example:"
+    echo "  git epita-push this_is_a_tag_name \"this_is_a_message\" myfile.txt"
+    echo "  git epita-push this_is_a_tag_name \"this_is_a_message\""
+    exit 0
+fi
+
+# Check if at least two arguments (tag-name and message) are passed
+if [ "$#" -lt 2 ]; then
+    echo "Error: Missing required arguments."
+    echo "Use 'git epita-push -help' for more information."
+    exit 1
+fi
+
+# Assign arguments to variables
+TAG_NAME=$1
+MESSAGE=$2
+FILE=${3:-.}  # Use provided file or default to "."
+
+# Add the file to Git
+git add "$FILE"
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to add files."
+    exit 1
+fi
+
+# Commit with the provided message
+git commit -m "$MESSAGE"
+if [ $? -ne 0 ]; then
+    echo "Error: Commit failed."
+    exit 1
+fi
+
+# Create the full tag name by combining tag_name and message
+FULL_TAG_NAME="${TAG_NAME}-${MESSAGE}"
+
+# Tag with the combined tag name and message
+git tag -a "$FULL_TAG_NAME" -m "$MESSAGE"
+if [ $? -ne 0 ]; then
+    echo "Error: Tagging failed."
+    exit 1
+fi
+
+# Push with tags
+git push --follow-tags
+if [ $? -ne 0 ]; then
+    echo "Error: Push failed."
+    exit 1
+fi
+
+echo "Files committed and tagged successfully."
+
